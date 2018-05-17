@@ -7,6 +7,7 @@ USE_ZYPPER=1
 USE_PIP2=1
 USE_PIP3=1
 USE_GIT=1
+USE_WGET=1
 SKIP_CHECK=0
 SKIP_LIST=()
 GIT_CLONE="git clone --depth=1"
@@ -63,6 +64,20 @@ function install_pip3
     fi
 }
 
+function install_wget
+{
+    NAME=$1
+    URL=$2
+    INSTALL_PATH=$3
+    POST_COMMAND=$4
+    if [ $USE_WGET -eq 1 ]; then
+        echo -e "\e[32m\e[1m--] Installing $NAME\e[0m"
+        # Todo; make this configurable
+        wget $URL -P $ROOT_DIR/$INSTALL_PATH || (pushd $ROOT_DIR/$INSTALL_PATH && git pull && popd)
+        pushd $ROOT_DIR/$INSTALL_PATH && $POST_COMMAND && popd
+    fi
+}
+
 
 
 function load_config
@@ -75,14 +90,15 @@ function load_config
         echo "#   \" \"      -- Stolas     \" \"">> $CONFIG_FILE
         echo "ROOT_DIR=\"$ROOT_DIR\"">> $CONFIG_FILE
         echo "CORE_PATTERN=\"$CORE_PATTERN\"">> $CONFIG_FILE
-        echo "USE_ZYPPER=\"$USE_ZYPPER\"">> $CONFIG_FILE
-        echo "USE_PIP2=\"$USE_PIP2\"">> $CONFIG_FILE
-        echo "USE_PIP3=\"$USE_PIP3\"">> $CONFIG_FILE
-        echo "USE_GIT=\"$USE_GIT\"">> $CONFIG_FILE
+        echo "USE_ZYPPER=$USE_ZYPPER">> $CONFIG_FILE
+        echo "USE_PIP2=$USE_PIP2">> $CONFIG_FILE
+        echo "USE_PIP3=$USE_PIP3">> $CONFIG_FILE
+        echo "USE_GIT=$USE_GIT">> $CONFIG_FILE
+        echo "USE_WGET=$USE_WGET">> $CONFIG_FILE
         echo "PIP2=\"$PIP2\"">> $CONFIG_FILE
         echo "PIP3=\"$PIP3\"">> $CONFIG_FILE
         echo "GIT_CLONE=\"$GIT_CLONE\"">> $CONFIG_FILE
-        echo "SKIP_CHECK=\"$SKIP_CHECK\"">> $CONFIG_FILE
+        echo "SKIP_CHECK=$SKIP_CHECK">> $CONFIG_FILE
         chmod 600 $CONFIG_FILE
     fi
     source $CONFIG_FILE
@@ -103,6 +119,7 @@ function run_lifp
     echo -n " :: use pip2            " ; echo "$USE_PIP2"
     echo -n " :: use pip3            " ; echo "$USE_PIP3"
     echo -n " :: use git             " ; echo "$USE_GIT"
+    echo -n " :: use wget            " ; echo "$USE_WGET"
     echo -n " :: pip2 command        " ; echo "$PIP2"
     echo -n " :: pip3 command        " ; echo "$PIP3"
     echo -n " :: git clone command   " ; echo "$GIT_CLONE"
@@ -122,7 +139,7 @@ function run_lifp
     mkdir -p $ROOT_DIR/{Fuzzing,Exploitation,Cracking,Enumeration,Reversing}
 
     # Todo; Remove most of the zypper's
-    # Todo; GoBuster, Aircrack, hashcat, hydra, afl, z3, triton, EyeWitness, Metasploit, umap, binja, ripr, diphora, proxychains, socat, Burp
+    # Todo; GoBuster, Aircrack, hydra, afl, z3, triton, EyeWitness, Metasploit, umap, binja, ripr, diphora, proxychains, socat, Burp
 
     # Todo; Make configurable to ignore certain files w/o having to edit this.
     install_zypper "DevTools" "cmake gcc gdb"
@@ -134,8 +151,7 @@ function run_lifp
     install_pip2   "PwnTools" pwntools
     install_zypper "Nmap Scanner" nmap
     install_zypper "Ncat" ncat
-    # Todo; Fix
-    # install_git    "Ncrack" https://github.com/nmap/ncrack.git Cracking/ncrack "./configure && make" 
+    install_git    "Ncrack" https://github.com/nmap/ncrack.git Cracking/ncrack "./configure; make" 
     install_pip3   "MitM HTTP(S) Proxy" mitmproxy
     install_pip2   "Scapy Library Py2" scapy
     install_pip3   "Scapy Library Py3" scapy-python3
@@ -147,6 +163,7 @@ function run_lifp
     install_pip2   "Unicorn Engine" unicorn
     install_pip2   "Capstone Engine" capstone
     install_zypper "John the Ripper" john
+    install_zypper "Hashcat" hashcat
     install_git    "Sqlmap" https://github.com/sqlmapproject/sqlmap.git Exploitation/sqlmap
     install_zypper "Wireshark" wireshark-ui-qt
     install_pip2   "WFuzz" wfuzz
@@ -157,6 +174,8 @@ function run_lifp
     install_git    "Skipfish" https://github.com/spinkham/skipfish.git Exploitation/skipfish
     install_git    "Radare2" https://github.com/radare/radare2.git Reversing/radare2 ./sys/user.sh
     install_git    "GDB Enhanced Features (GEF)" https://github.com/hugsy/gef.git Reversing/gef  "./scripts/gef.sh && ./scripts/gef-extras.sh"
+    install_git    "Exploit-DB" https://github.com/offensive-security/exploit-database.git Exploitation/ExploitDB # I feel strongly for removing this in the near future, but for OSCP SearchSploit is kinda usefull.
+    install_wget   "IDA Free" https://out7.hex-rays.com/files/idafree70_linux.run Reversing/IDA_Free
 
     echo -e "\e[32m\e[1m--] Setting CorePattern\e[0m"
     sudo sysctl -w kernel.core_pattern=$CORE_PATTERN
